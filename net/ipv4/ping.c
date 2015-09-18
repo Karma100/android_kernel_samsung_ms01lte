@@ -851,7 +851,9 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
 		goto out;
 
 	if (addr_len) {
-		if (family == AF_INET6 && addr_len)
+		if (family == AF_INET)
+			*addr_len = sizeof(*sin);
+		else if (family == AF_INET6 && addr_len)
 			*addr_len = sizeof(*sin6);
 	}
 
@@ -886,14 +888,11 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
 	if (family == AF_INET) {
 		sin = (struct sockaddr_in *) msg->msg_name;
 
-		if (msg->msg_name) {
-			struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
-
+		if (sin) {
 			sin->sin_family = AF_INET;
 			sin->sin_port = 0 /* skb->h.uh->source */;
 			sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
 			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-			*addr_len = sizeof(*sin);
 		}
 
 		if (isk->cmsg_flags)
